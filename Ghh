@@ -1,0 +1,246 @@
+from abc import ABC, abstractmethod
+from datetime import date
+
+
+class MedicalRecord:
+    VALID_BLOOD_TYPES = {"O", "A", "B", "AB"}
+
+    def __init__(self, blood_type: str):
+        if blood_type not in self.VALID_BLOOD_TYPES:
+            raise ValueError("Некорректная группа крови")
+
+        self.__diagnoses = []
+        self.__allergies = []
+        self.__blood_type = blood_type
+
+    @property
+    def diagnoses(self):
+        return self.__diagnoses.copy()
+
+    @property
+    def allergies(self):
+        return self.__allergies.copy()
+
+    @property
+    def blood_type(self):
+        return self.__blood_type
+
+    def add_diagnosis(self, diagnosis: str):
+        if not isinstance(diagnosis, str) or diagnosis.strip() == "":
+            raise ValueError("Диагноз должен быть непустой строкой")
+        self.__diagnoses.append(diagnosis)
+
+    def add_allergy(self, allergy: str):
+        if not isinstance(allergy, str) or allergy.strip() == "":
+            raise ValueError("Аллергия должна быть непустой строкой")
+        self.__allergies.append(allergy)
+
+
+class Patient:
+    def __init__(self, full_name: str, age: int, blood_type: str):
+        if not isinstance(full_name, str) or full_name.strip() == "":
+            raise ValueError("Некорректное имя")
+
+        if not isinstance(age, int) or not 0 <= age <= 150:
+            raise ValueError("Некорректный возраст")
+
+        self.__full_name = full_name
+        self.__age = age
+        self.__medical_record = MedicalRecord(blood_type)
+
+    @property
+    def full_name(self):
+        return self.__full_name
+
+    @property
+    def age(self):
+        return self.__age
+
+    @property
+    def medical_record(self):
+        return self.__medical_record
+
+    def add_diagnosis(self, diagnosis: str):
+        self.__medical_record.add_diagnosis(diagnosis)
+
+    def add_allergy(self, allergy: str):
+        self.__medical_record.add_allergy(allergy)
+
+    def is_minor(self) -> bool:
+        return self.__age < 18
+
+    def __str__(self):
+        count = len(self.__medical_record.diagnoses)
+        return f"{self.__full_name} ({self.__age} лет, группа {self.__medical_record.blood_type}): {count} диагноз(а)"
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, Patient)
+            and self.__full_name == other.__full_name
+            and self.__age == other.__age
+        )
+
+
+class Appointment:
+    def __init__(
+        self,
+        patient: Patient,
+        doctor_name: str,
+        specialty: str,
+        services: list[str],
+        appointment_date: date,
+        is_emergency: bool = False
+    ):
+        self.patient = patient
+        self.doctor_name = doctor_name
+        self.specialty = specialty
+        self.services = services.copy()
+        self.date = appointment_date
+        self.is_emergency = is_emergency
+
+    def __str__(self):
+        emergency_text = " срочно" if self.is_emergency else ""
+        return (
+            f"Приём: {self.patient.full_name} -> "
+            f"{self.doctor_name} ({self.specialty}), "
+            f"{self.date}, услуги: {self.services}{emergency_text}"
+        )
+
+
+class AppointmentBuilder:
+    def __init__(self):
+        self.__patient = None
+        self.__doctor_name = None
+        self.__specialty = None
+        self.__services = []
+        self.__date = None
+        self.__is_emergency = False
+
+    def for_patient(self, patient: Patient):
+        self.__patient = patient
+        return self
+
+    def with_doctor(self, doctor_name: str, specialty: str):
+        if not doctor_name or not specialty:
+            raise ValueError("Имя врача и специальность обязательны")
+
+        self.__doctor_name = doctor_name
+        self.__specialty = specialty
+        return self
+
+    def add_service(self, service_name: str):
+        if not service_name:
+            raise ValueError("Название услуги не может быть пустым")
+
+        self.__services.append(service_name)
+        return self
+
+    def on_date(self, appointment_date: date):
+        if appointment_date < date.today():
+            raise ValueError("Дата приёма не может быть в прошлом")
+
+        self.__date = appointment_date
+        return self
+
+    def as_emergency(self):
+        self.__is_emergency = True
+        return self
+
+    def build(self) -> Appointment:
+        if self.__patient is None:
+            raise ValueError("Не задан пациент")
+
+        if self.__doctor_name is None or self.__specialty is None:
+            raise ValueError("Не задан врач")
+
+        if self.__date is None:
+            raise ValueError("Не задана дата")
+
+        return Appointment(
+            self.__patient,
+            self.__doctor_name,
+            self.__specialty,
+            self.__services,
+            self.__date,
+            self.__is_emergency
+        )
+
+
+class PricingStrategy(ABC):
+    @abstractmethod
+    def calculate(self, appointment: Appointment) -> float:
+        pass
+
+
+class FlatPricing(PricingStrategy):
+    def __init__(self, price_per_service: float):
+        self.price_per_service = price_per_service
+
+    def calculate(self, appointment: Appointment) -> float:
+        return self.price_per_service * len(appointment.services)
+
+
+class SpecialtyPricing(PricingStrategy):
+    def __init__(self, prices: dict):
+        self.prices = prices
+
+    def calculate(self, appointment: Appointment) -> float:
+        if appointment.specialty not in self.prices:
+            raise KeyError("Нет цены для данной специальности")
+
+        return self.prices[appointment.specialty] * len(appointment.services)
+
+
+class EmergencyPricing(PricingStrategy):
+    def __init__(self, base_strategy: PricingStrategy, multiplier: float):
+        self.base_strategy = base_strategy
+        self.multiplier = multiplier
+
+    def calculate(self, appointment: Appointment) -> float:
+        base_price = self.base_strategy.calculate(appointment)
+
+        if appointment.is_emergency:
+            return base_price * self.multiplier
+
+        return base_price
+
+
+class MinorDiscountPricing(PricingStrategy):
+    def __init__(self, base_strategy: PricingStrategy, discount_percent: float):
+        self.base_strategy = base_strategy
+        self.discount_percent = discount_percent
+
+    def calculate(self, appointment: Appointment) -> float:
+        base_price = self.base_strategy.calculate(appointment)
+
+        if appointment.patient.is_minor():
+            return base_price * (1 - self.discount_percent / 100)
+
+        return base_price
+
+
+class Clinic:
+    def __init__(self):
+        self.__appointments = []
+        self.__pricing_strategy = FlatPricing(0)
+
+    def add_appointment(self, appointment: Appointment):
+        self.__appointments.append(appointment)
+
+    def set_pricing(self, strategy: PricingStrategy):
+        self.__pricing_strategy = strategy
+
+    def total_revenue(self) -> float:
+        total = 0
+
+        for appointment in self.__appointments:
+            total += self.__pricing_strategy.calculate(appointment)
+
+        return total
+
+    def appointments_for(self, patient: Patient) -> list:
+        return [
+            appointment
+            for appointment in self.__appointments
+            if appointment.patient == patient
+        ]
