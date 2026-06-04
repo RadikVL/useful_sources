@@ -1,0 +1,78 @@
+class MedicalRecord:
+    VALID_BLOOD_TYPES = {"O", "A", "B", "AB"}
+
+    def __init__(self, blood_type: str):
+        if blood_type not in self.VALID_BLOOD_TYPES:
+            raise ValueError("Некорректная группа крови")
+
+        self.__diagnoses = []
+        self.__allergies = []
+        self.__blood_type = blood_type
+
+    @property
+    def diagnoses(self):
+        return self.__diagnoses.copy()
+
+    @property
+    def allergies(self):
+        return self.__allergies.copy()
+
+    @property
+    def blood_type(self):
+        return self.__blood_type
+
+    def add_diagnosis(self, diagnosis: str):
+        if not isinstance(diagnosis, str) or diagnosis.strip() == "":
+            raise ValueError("Диагноз должен быть непустой строкой")
+
+        self.__diagnoses.append(diagnosis)
+
+    def add_allergy(self, allergy: str):
+        if not isinstance(allergy, str) or allergy.strip() == "":
+            raise ValueError("Аллергия должна быть непустой строкой")
+
+        self.__allergies.append(allergy)
+
+
+class Patient:
+    def __init__(self, full_name: str, age: int, blood_type: str):
+        if not isinstance(full_name, str) or full_name.strip() == "":
+            raise ValueError("ФИО должно быть непустой строкой")
+
+        if not isinstance(age, int) or not 0 <= age <= 150:
+            raise ValueError("Возраст должен быть целым числом от 0 до 150")
+
+        self.__full_name = full_name
+        self.__age = age
+        self.__medical_record = MedicalRecord(blood_type)
+
+    @property
+    def full_name(self):
+        return self.__full_name
+
+    @property
+    def age(self):
+        return self.__age
+
+    @property
+    def medical_record(self):
+        return self.__medical_record
+
+    def add_diagnosis(self, diagnosis: str):
+        self.__medical_record.add_diagnosis(diagnosis)
+
+    def add_allergy(self, allergy: str):
+        self.__medical_record.add_allergy(allergy)
+
+    def is_minor(self) -> bool:
+        return self.__age < 18
+
+    def __str__(self):
+        diagnoses_count = len(self.__medical_record.diagnoses)
+        return f"{self.__full_name} ({self.__age} лет, группа {self.__medical_record.blood_type}): {diagnoses_count} диагноз(а)"
+
+    def __eq__(self, other):
+        if not isinstance(other, Patient):
+            return False
+
+        return self.__full_name == other.__full_name and self.__age == other.__age
