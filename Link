@@ -1,0 +1,223 @@
+{
+  "burstObservatory" : {
+    "pingConfig" : {
+      "connectivity" : "https:\/\/ya.ru",
+      "destination" : "http:\/\/connectivitycheck.gstatic.com\/generate_204",
+      "interval" : "60s",
+      "sampling" : 2,
+      "timeout" : "3s"
+    },
+    "subjectSelector" : [
+      "proxy"
+    ]
+  },
+  "dns" : {
+    "hosts" : {
+      "lkfl2.nalog.ru" : "213.24.64.175",
+      "lknpd.nalog.ru" : "213.24.64.181"
+    },
+    "queryStrategy" : "UseIPv4",
+    "servers" : [
+      "https:\/\/cloudflare-dns.com\/dns-query",
+      {
+        "address" : "https:\/\/common.dns.yandex.net\/dns-query",
+        "domains" : [
+          "geosite:category-ru",
+          "geosite:yandex",
+          "domain:yastatic.net",
+          "domain:appmetrica.yandex.ru",
+          "domain:gosuslugi.ru",
+          "domain:nalog.ru",
+          "domain:sberbank.ru",
+          "domain:online.sberbank.ru",
+          "domain:tinkoff.ru",
+          "domain:t-bank.ru",
+          "domain:alfabank.ru",
+          "domain:vtb.ru",
+          "domain:mail.ru",
+          "domain:max.ru",
+          "domain:vk.com",
+          "domain:ozon.ru",
+          "domain:wildberries.ru",
+          "domain:mirror.timeweb.ru",
+          "domain:timeweb.ru"
+        ],
+        "skipFallback" : true
+      }
+    ]
+  },
+  "inbounds" : [
+    {
+      "listen" : "127.0.0.1",
+      "port" : 10808,
+      "protocol" : "socks",
+      "settings" : {
+        "auth" : "noauth",
+        "udp" : true
+      },
+      "sniffing" : {
+        "destOverride" : [
+          "http",
+          "tls",
+          "quic"
+        ],
+        "enabled" : true,
+        "routeOnly" : true
+      },
+      "tag" : "socks"
+    },
+    {
+      "listen" : "127.0.0.1",
+      "port" : 10809,
+      "protocol" : "http",
+      "settings" : {
+        "allowTransparent" : false
+      },
+      "sniffing" : {
+        "destOverride" : [
+          "http",
+          "tls",
+          "quic"
+        ],
+        "enabled" : true,
+        "routeOnly" : true
+      },
+      "tag" : "http"
+    }
+  ],
+  "log" : {
+    "access" : "\/private\/var\/mobile\/Containers\/Shared\/AppGroup\/B98535F1-6791-407C-807A-83C8AD6E7440\/Library\/Application Support\/Xray\/logs\/access.log",
+    "dnsLog" : true,
+    "loglevel" : "Warning"
+  },
+  "outbounds" : [
+    {
+      "protocol" : "vless",
+      "settings" : {
+        "vnext" : [
+          {
+            "address" : "tw-spb-01.relay.vibrancyq.site",
+            "port" : 443,
+            "users" : [
+              {
+                "encryption" : "none",
+                "flow" : "",
+                "id" : "7bbeaef5-fccd-4b06-89a2-a672637efd2c"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings" : {
+        "network" : "xhttp",
+        "realitySettings" : {
+          "fingerprint" : "firefox",
+          "publicKey" : "VXgNfsHb_cp0Yw7OUOcfmJjmRe3mdxl2m510TwniYls",
+          "serverName" : "mirror.timeweb.ru",
+          "shortId" : "38b592b056bfb355"
+        },
+        "security" : "reality",
+        "xhttpSettings" : {
+          "host" : "",
+          "mode" : "stream-one",
+          "path" : "\/e967b084efd73926c4b6e583"
+        }
+      },
+      "tag" : "proxy"
+    },
+    {
+      "protocol" : "freedom",
+      "settings" : {
+        "domainStrategy" : "UseIPv4"
+      },
+      "tag" : "direct"
+    },
+    {
+      "protocol" : "blackhole",
+      "tag" : "block"
+    }
+  ],
+  "policy" : {
+    "levels" : {
+      "8" : {
+        "bufferSize" : 512,
+        "connIdle" : 600,
+        "downlinkOnly" : 4,
+        "handshake" : 4,
+        "uplinkOnly" : 2
+      }
+    }
+  },
+  "remarks" : "Обход белых списков",
+  "routing" : {
+    "domainMatcher" : "hybrid",
+    "domainStrategy" : "IPIfNonMatch",
+    "rules" : [
+      {
+        "ip" : [
+          "10.0.0.0\/8",
+          "172.16.0.0\/12",
+          "192.168.0.0\/16",
+          "100.64.0.0\/10",
+          "127.0.0.0\/8",
+          "169.254.0.0\/16",
+          "0.0.0.0\/8",
+          "224.0.0.0\/4",
+          "240.0.0.0\/4",
+          "255.255.255.255\/32",
+          "::1\/128",
+          "fc00::\/7",
+          "fe80::\/10"
+        ],
+        "outboundTag" : "direct",
+        "type" : "field"
+      },
+      {
+        "outboundTag" : "block",
+        "protocol" : [
+          "quic"
+        ],
+        "type" : "field"
+      },
+      {
+        "outboundTag" : "direct",
+        "protocol" : [
+          "bittorrent"
+        ],
+        "type" : "field"
+      },
+      {
+        "domain" : [
+          "geosite:category-ru",
+          "geosite:yandex",
+          "domain:yastatic.net",
+          "domain:appmetrica.yandex.ru",
+          "domain:gosuslugi.ru",
+          "domain:nalog.ru",
+          "domain:sberbank.ru",
+          "domain:online.sberbank.ru",
+          "domain:tinkoff.ru",
+          "domain:t-bank.ru",
+          "domain:alfabank.ru",
+          "domain:vtb.ru",
+          "domain:mail.ru",
+          "domain:max.ru",
+          "domain:vk.com",
+          "domain:ozon.ru",
+          "domain:wildberries.ru",
+          "domain:mirror.timeweb.ru",
+          "domain:timeweb.ru"
+        ],
+        "outboundTag" : "direct",
+        "type" : "field"
+      },
+      {
+        "ip" : [
+          "geoip:ru"
+        ],
+        "outboundTag" : "direct",
+        "type" : "field"
+      }
+    ]
+  }
+}
